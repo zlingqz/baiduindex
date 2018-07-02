@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
+# 参考 http://www.cnblogs.com/TTyb/p/6051366.html
 # 百度指数的抓取
 # 截图教程：http://www.myexception.cn/web/2040513.html
 #
@@ -9,8 +10,12 @@
 # 百度指数地址：http://index.baidu.com
 
 import time
+import re
+from random import uniform, randint
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from PIL import Image #pip3 install pillow; pip3 install pyocr
 from PIL import ImageEnhance
 import pytesseract
@@ -26,6 +31,7 @@ def openbrowser():
     # Firefox()
     # Chrome()
     browser = webdriver.Chrome()
+    # browser = webdriver.Firefox()
     # 输入网址
     # browser = webdriver.PhantomJS(executable_path='..\phantomjs.exe')
     # browser.get("http://index.baidu.com")
@@ -118,6 +124,15 @@ def openbrowser():
             select = input("请观察浏览器网站是否已经登陆(y/n)：")
 
 
+def randY(y):
+    y = randint(y-5, y+5)
+    if y >= 190:
+        return 190
+    if y <= 0:
+        return 0
+    return y
+
+
 def getindex(keyword, day):
     openbrowser()
     time.sleep(2)
@@ -171,7 +186,8 @@ def getindex(keyword, day):
     # 常用js:http://www.cnblogs.com/hjhsysu/p/5735339.html
     # 搜索词：selenium JavaScript模拟鼠标悬浮
     x_0 = 1
-    y_0 = 0
+    y_0 = randint(0, 190)
+    x_bias = 0
 
     if day == "all":
         day = 1000000
@@ -183,21 +199,49 @@ def getindex(keyword, day):
         # 只有移动位置xoyelement[2]是准确的
         for i in range(day):
             # 坐标偏移量???
-            ActionChains(browser).move_to_element_with_offset(xoyelement, x_0, y_0).perform()
+            # ActionChains(browser).move_to_element_with_offset(xoyelement, randint(x_0, x_0 + 10), randY(y_0)).perform()
 
             # 构造规则
             if day == 7:
-                x_0 = x_0 + 169
+                x_0 = 1 + i * 169
+                x_bias = 70
             elif day == 30:
                 x_0 = x_0 + 34.97
+                x_bias = 10
             elif day == 90:
                 x_0 = x_0 + 11.39
             elif day == 180:
                 x_0 = x_0 + 5.66
             elif day == 1000000:
                 x_0 = x_0 + 3.37222222
-            time.sleep(2)
+            if i == 0:
+                ActionChains(browser).move_to_element_with_offset(xoyelement, randint(x_0+20, x_0 + x_bias), randY(y_0)).perform()
+            else:
+                ActionChains(browser).move_to_element_with_offset(xoyelement, randint(x_0 - x_bias, x_0 + x_bias),
+                                                                  randY(y_0)).perform()
+            # time.sleep(uniform(2, 4))
+            WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.ID, 'viewbox')))
             # <div class="imgtxt" style="margin-left:-117px;"></div>
+            display = browser.find_element_by_xpath("//*[@id='viewbox']").get_attribute("style")
+            style = re.findall('display: (.*?); ', display)[0]
+            print(style)
+            cot = 0
+            while style == 'none':
+                if i == 0:
+                    ActionChains(browser).move_to_element_with_offset(xoyelement, randint(x_0+20, x_0 + x_bias), randY(y_0)).perform()
+                else:
+                    ActionChains(browser).move_to_element_with_offset(xoyelement, randint(x_0 - x_bias, x_0 + x_bias),
+                                                                      randY(y_0)).perform()
+                time.sleep(uniform(2, 4))
+                display = browser.find_element_by_xpath("//*[@id='viewbox']").get_attribute("style")
+                style = re.findall('display: (.*?); ', display)[0]
+                if style == 'block':
+                    print('viewbox已找到', '  cot:', str(cot))
+                    break
+                cot = cot + 1
+                if cot > 200:
+                    print('未找到viewbox')
+                    break
             imgelement = browser.find_element_by_xpath('//div[@id="viewbox"]')
             # 找到图片坐标
             locations = imgelement.location
@@ -237,6 +281,7 @@ def getindex(keyword, day):
                 enhancer = enhancer.enhance(0)
                 code = pytesseract.image_to_string(image, config='--tessdata-dir "C:\\Program Files (x86)\\Tesseract-OCR\\tessdata"')
                 if code:
+                    code = code.replace('S', '5')
                     index.append(code)
                 else:
                     index.append("")
