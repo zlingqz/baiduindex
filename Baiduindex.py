@@ -232,7 +232,8 @@ def getindex(keyword, day):
                 else:
                     ActionChains(browser).move_to_element_with_offset(xoyelement, randint(x_0 - x_bias, x_0 + x_bias),
                                                                       randY(y_0)).perform()
-                time.sleep(uniform(2, 4))
+                # time.sleep(uniform(2, 4))
+                WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.ID, 'viewbox')))
                 display = browser.find_element_by_xpath("//*[@id='viewbox']").get_attribute("style")
                 style = re.findall('display: (.*?); ', display)[0]
                 if style == 'block':
