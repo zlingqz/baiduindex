@@ -278,11 +278,12 @@ def getindex(keyword, day):
             # 图像识别
             try:
                 image = Image.open(str(path) + "zoom.png")
-                enhancer = ImageEnhance.Color(image)
-                enhancer = enhancer.enhance(0)
+                image = image.point(lambda x: 0 if x > 143 else 255)
+                # enhancer = ImageEnhance.Color(image)
+                # enhancer = enhancer.enhance(0)
                 code = pytesseract.image_to_string(image, config='--tessdata-dir "C:\\Program Files (x86)\\Tesseract-OCR\\tessdata"')
                 if code:
-                    code = code.replace('S', '5')
+                    # code = code.replace('S', '5')
                     index.append(code)
                 else:
                     index.append("")
@@ -320,3 +321,7 @@ if __name__ == "__main__":
     elif sel == 4:
         day = "all"
     getindex(keyword, day)
+
+
+# my user agent
+# Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36
